@@ -1,11 +1,37 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local targetRemotes = {}
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 
--- Mencari remote pancing atau inventory reward
+local JUMLAH_DUPLIKAT = 10
+local JEDA_ANTAR_SINYAL = 0.3
+
+print("--- EZFISHING v7: MASS DUPLICATOR STARTING ---")
+
+local targetRemote = nil
 for _, v in pairs(ReplicatedStorage:GetDescendants()) do
-    if v:IsA("RemoteEvent") and (v.Name:lower():match("fish") or v.Name:lower():match("add") or v.Name:lower():match("reward")) then
-        targetRemotes[v] = true
+    if v:IsA("RemoteEvent") and (v.Name:lower():match("reward") or v.Name:lower():match("fish") or v.Name:lower():match("add")) then
+        targetRemote = v
+        break
     end
+end
+
+if not targetRemote then
+    warn("Remote tidak ditemukan! Pastikan nama remote mengandung kata kunci 'fish' atau 'reward'.")
+    return
+end
+
+local function startMassExploit(args)
+    print("Mengirim " .. JUMLAH_DUPLIKAT .. " sinyal ke: " .. targetRemote.Name)
+    
+    for i = 1, JUMLAH_DUPLIKAT do
+        task.spawn(function()
+            targetRemote:FireServer(unpack(args))
+        end)
+        
+        if i % 10 == 0 then task.wait(JEDA_ANTAR_SINYAL) end
+    end
+    
+    print("Done.")
 end
 
 local oldNamecall
@@ -13,18 +39,11 @@ oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
     local args = {...}
     local method = getnamecallmethod()
     
-    if method == "FireServer" and targetRemotes[self] then
-        print("Sinyal Reward terdeteksi! Mencoba injeksi ke Database Inventory...")
-        
-        -- Kita beri jeda sedikit lebih lama (0.3s) agar server selesai menulis data pertama
-        -- Lalu kita coba kirim 3 kali tambahan
+    if self == targetRemote and method == "FireServer" then
         task.spawn(function()
-            for i = 1, 3 do
-                task.wait(0.3) 
-                self:FireServer(unpack(args))
-                print("Injeksi duplikat ke-" .. i .. " terkirim.")
-            end
+            startMassExploit(args)
         end)
+        
     end
     
     return oldNamecall(self, ...)
