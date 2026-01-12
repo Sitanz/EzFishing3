@@ -2,64 +2,60 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
-print("--- UNIVERSAL FISHING BYPASS v3 (ACCURATE MODE) ---")
+print("--- UNIVERSAL FISHING BYPASS v4 (STEALTH MODE) ---")
 
--- Argumen kemenangan
-local winningArgs = {
-    {true},
-    {"Finished"},
-    {100},
-    {"Success"}
-}
+local winningArg = true 
 
--- Filter: Hanya tembak remote yang namanya mengandung kata-kata ini
 local fishingKeywords = {"fish", "pancing", "minigame", "catch", "hook", "rod", "game"}
 
 local function isFishingRemote(name)
     local n = name:lower()
     for _, keyword in ipairs(fishingKeywords) do
-        if n:match(keyword) then
-            return true
-        end
+        if n:match(keyword) then return true end
     end
     return false
 end
 
-local function startBypass(remote)
-    -- Abaikan remote sistem/default
+local function stealthBypass(remote)
     if remote.Name:match("Default") or remote.Name:match("Roblox") then return end
     
-    -- Hanya tembak jika namanya relevan dengan pancingan
     if isFishingRemote(remote.Name) then
-        print("Target ditemukan! Mencoba bypass: " .. remote.Name)
-        for _, args in ipairs(winningArgs) do
-            task.spawn(function()
-                pcall(function()
-                    remote:FireServer(unpack(args))
-                end)
-            end)
-        end
+        local humanDelay = math.random(3, 7)
+        print("Target ditemukan: " .. remote.Name .. ". Menunggu " .. humanDelay .. " detik agar tidak terdeteksi...")
+        
+        task.wait(humanDelay)
+        
+        pcall(function()
+            remote:FireServer(winningArg)
+        end)
+        
+        print("Sinyal Stealth terkirim ke: " .. remote.Name)
     end
 end
 
 task.spawn(function()
     while true do
-        -- Scan ReplicatedStorage
+        local remotesFound = {}
+        
         for _, v in pairs(ReplicatedStorage:GetDescendants()) do
-            if v:IsA("RemoteEvent") then
-                startBypass(v)
+            if v:IsA("RemoteEvent") and isFishingRemote(v.Name) then
+                table.insert(remotesFound, v)
             end
         end
 
-        -- Scan alat yang dipegang
         if LocalPlayer.Character then
             for _, v in pairs(LocalPlayer.Character:GetDescendants()) do
-                if v:IsA("RemoteEvent") then
-                    startBypass(v)
+                if v:IsA("RemoteEvent") and isFishingRemote(v.Name) then
+                    table.insert(remotesFound, v)
                 end
             end
         end
+
+        for _, remote in ipairs(remotesFound) do
+            stealthBypass(remote)
+            task.wait(math.random(2, 4))
+        end
         
-        task.wait(5) -- Jeda lebih lama agar tidak dianggap spam/respawn
+        task.wait(10)
     end
 end)
