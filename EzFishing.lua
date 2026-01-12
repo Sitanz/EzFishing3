@@ -1,23 +1,9 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-
-print("--- EZFISHING v6: AGGRESSIVE DUPLICATOR ---")
-print("Mode: Sinyal Serentak (Simultaneous Fire)")
-
-local fishingKeywords = {"fish", "pancing", "minigame", "catch", "hook", "reward", "win"}
-
-local function isFishingRemote(remote)
-    local n = remote.Name:lower()
-    for _, keyword in ipairs(fishingKeywords) do
-        if n:match(keyword) then return true end
-    end
-    return false
-end
-
 local targetRemotes = {}
+
+-- Mencari remote pancing atau inventory reward
 for _, v in pairs(ReplicatedStorage:GetDescendants()) do
-    if v:IsA("RemoteEvent") and isFishingRemote(v) then
+    if v:IsA("RemoteEvent") and (v.Name:lower():match("fish") or v.Name:lower():match("add") or v.Name:lower():match("reward")) then
         targetRemotes[v] = true
     end
 end
@@ -28,14 +14,17 @@ oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
     local method = getnamecallmethod()
     
     if method == "FireServer" and targetRemotes[self] then
-        print("Sinyal asli terdeteksi! Mengirim 5 duplikat serentak...")
+        print("Sinyal Reward terdeteksi! Mencoba injeksi ke Database Inventory...")
         
-        -- Mengirim 5 sinyal tambahan secara instan
-        for i = 1, 5 do 
-            task.spawn(function() 
-                self:FireServer(unpack(args)) 
-            end)
-        end
+        -- Kita beri jeda sedikit lebih lama (0.3s) agar server selesai menulis data pertama
+        -- Lalu kita coba kirim 3 kali tambahan
+        task.spawn(function()
+            for i = 1, 3 do
+                task.wait(0.3) 
+                self:FireServer(unpack(args))
+                print("Injeksi duplikat ke-" .. i .. " terkirim.")
+            end
+        end)
     end
     
     return oldNamecall(self, ...)
