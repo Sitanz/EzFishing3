@@ -1,58 +1,42 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
 
-local JUMLAH_IKAN = 100
-local JEDA_SPAM = 0.05
+-- KONFIGURASI MASSAL
+local JUMLAH_IKAN = 100 -- Coba 100 dulu untuk tes
+local NAMA_REMOTE = "CreateRewardInfoEvent" -- Berdasarkan screenshot log kamu
 
-print("--- EZFISHING v10: XENO EDITION ACTIVE ---")
+print("--- EZFISHING v11: DIRECT BOMBARDMENT ACTIVE ---")
 
-local targetRemote = nil
-for _, v in pairs(ReplicatedStorage:GetDescendants()) do
-    if v:IsA("RemoteEvent") then
-        local n = v.Name:lower()
-        if n:match("fish") or n:match("reward") or n:match("catch") or n:match("add") then
-            targetRemote = v
-            break
-        end
-    end
-end
+-- 1. Cari Remote secara spesifik
+local targetRemote = ReplicatedStorage:FindFirstChild(NAMA_REMOTE, true)
 
 if not targetRemote then
-    warn("Remote tidak ditemukan! Pastikan nama remote mengandung kata 'fish' atau 'reward'.")
+    warn("Remote '" .. NAMA_REMOTE .. "' tidak ditemukan di ReplicatedStorage!")
     return
 end
 
-print("Remote Target: " .. targetRemote.Name)
+print("Target Terkunci: " .. targetRemote.Name)
 
-local function panggilHadiah(args)
-    print("Memulai duplikasi " .. JUMLAH_IKAN .. " ikan...")
+-- 2. Fungsi Eksploitasi
+local function GasPol()
+    print("Mengirim " .. JUMLAH_IKAN .. " permintaan ikan sekaligus...")
     for i = 1, JUMLAH_IKAN do
         task.spawn(function()
-            targetRemote:FireServer(unpack(args))
+            -- Kita kirim sinyal tanpa argumen rumit
+            -- Banyak server hanya mengecek apakah sinyal ini datang
+            targetRemote:FireServer() 
         end)
         
-        if i % 20 == 0 then task.wait(JEDA_SPAM) end
+        -- Jeda sangat tipis agar tidak crash
+        if i % 50 == 0 then task.wait(0.1) end
     end
-    print("Duplikasi Selesai. Cek Inventory!")
+    print("Selesai. Cek inventory kamu!")
 end
 
-local mt = getrawmetatable(game)
-local oldIndex = mt.__index
-setreadonly(mt, false)
+-- 3. Cara Pakai
+print("TEKAN TOMBOL 'K' UNTUK MENDAPATKAN " .. JUMLAH_IKAN .. " IKAN")
 
-mt.__index = newcclosure(function(t, k)
-    if k == "FireServer" and t == targetRemote then
-        return function(self, ...)
-            local args = {...}
-            task.spawn(function()
-                panggilHadiah(args)
-            end)
-            return targetRemote.FireServer(self, unpack(args))
-        end
+game:GetService("UserInputService").InputBegan:Connect(function(input, gpe)
+    if not gpe and input.KeyCode == Enum.KeyCode.K then
+        GasPol()
     end
-    return oldIndex(t, k)
 end)
-setreadonly(mt, true)
-
-print("SISTEM SIAP: Silakan memancing 1x secara manual.")
