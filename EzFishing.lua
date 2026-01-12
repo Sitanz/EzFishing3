@@ -2,60 +2,45 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
-print("--- UNIVERSAL FISHING BYPASS v4 (STEALTH MODE) ---")
+print("--- EZFISHING v5: REWARD MULTIPLIER MODE ---")
+print("Selesaikan minigame secara manual, script akan melipatgandakan hasilnya!")
 
-local winningArg = true 
+local fishingKeywords = {"fish", "pancing", "minigame", "catch", "hook", "reward", "win"}
 
-local fishingKeywords = {"fish", "pancing", "minigame", "catch", "hook", "rod", "game"}
-
-local function isFishingRemote(name)
-    local n = name:lower()
+local function isFishingRemote(remote)
+    local n = remote.Name:lower()
     for _, keyword in ipairs(fishingKeywords) do
         if n:match(keyword) then return true end
     end
     return false
 end
 
-local function stealthBypass(remote)
-    if remote.Name:match("Default") or remote.Name:match("Roblox") then return end
-    
-    if isFishingRemote(remote.Name) then
-        local humanDelay = math.random(3, 7)
-        print("Target ditemukan: " .. remote.Name .. ". Menunggu " .. humanDelay .. " detik agar tidak terdeteksi...")
-        
-        task.wait(humanDelay)
-        
-        pcall(function()
-            remote:FireServer(winningArg)
-        end)
-        
-        print("Sinyal Stealth terkirim ke: " .. remote.Name)
+local remotes = {}
+for _, v in pairs(ReplicatedStorage:GetDescendants()) do
+    if v:IsA("RemoteEvent") and isFishingRemote(v) then
+        table.insert(remotes, v)
     end
 end
 
-task.spawn(function()
-    while true do
-        local remotesFound = {}
+for _, remote in ipairs(remotes) do
+    local oldFireServer
+    oldFireServer = hookmetamethod(game, "__namecall", function(self, ...)
+        local args = {...}
+        local method = getnamecallmethod()
         
-        for _, v in pairs(ReplicatedStorage:GetDescendants()) do
-            if v:IsA("RemoteEvent") and isFishingRemote(v.Name) then
-                table.insert(remotesFound, v)
+        if self == remote and method == "FireServer" then
+            print("Kemenangan manual terdeteksi pada: " .. self.Name)
+            print("Melakukan duplikasi hadiah (x10)...")
+            
+            for i = 1, 10 do
+                task.spawn(function()
+                    self:FireServer(unpack(args))
+                end)
             end
-        end
-
-        if LocalPlayer.Character then
-            for _, v in pairs(LocalPlayer.Character:GetDescendants()) do
-                if v:IsA("RemoteEvent") and isFishingRemote(v.Name) then
-                    table.insert(remotesFound, v)
-                end
-            end
-        end
-
-        for _, remote in ipairs(remotesFound) do
-            stealthBypass(remote)
-            task.wait(math.random(2, 4))
+            
+            print("Duplikasi selesai!")
         end
         
-        task.wait(10)
-    end
-end)
+        return oldFireServer(self, ...)
+    end)
+end
